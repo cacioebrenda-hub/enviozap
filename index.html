@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Disparo Zap</title>
+<style>
+  :root{
+    --bg:#0b141a;
+    --card:#111b21;
+    --card2:#182229;
+    --green:#25d366;
+    --green-dark:#128c4a;
+    --text:#e9edef;
+    --muted:#8696a0;
+    --border:#2a3942;
+    --pending:#e2b93b;
+    --sent:#25d366;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:16px;padding-bottom:100px;}
+  header{
+    display:flex;align-items:center;gap:10px;padding:14px 4px 18px 4px;
+  }
+  header .logo{
+    width:38px;height:38px;border-radius:10px;background:var(--green);
+    display:flex;align-items:center;justify-content:center;font-size:20px;
+  }
+  header h1{font-size:18px;margin:0;}
+  header p{margin:0;color:var(--muted);font-size:12px;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    font-size:13px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--muted);margin:0 0 10px 0;font-weight:600;
+  }
+  textarea, input{
+    width:100%;
+    background:var(--card2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:14px;
+    font-family:inherit;
+    resize:vertical;
+  }
+  textarea:focus, input:focus{outline:none;border-color:var(--green);}
+  .row{display:flex;gap:8px;margin-top:8px;}
+  .row input{flex:1;}
+  small.hint{display:block;color:var(--muted);font-size:11.5px;margin-top:6px;line-height:1.4;}
+
+  button{
+    border:none;border-radius:10px;padding:11px 16px;
+    font-size:14px;font-weight:600;cursor:pointer;
+    font-family:inherit;
+  }
+  .btn-primary{background:var(--green);color:#04140b;width:100%;}
+  .btn-primary:active{background:var(--green-dark);}
+  .btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
+  .btn-danger{background:transparent;color:#e05c5c;border:1px solid #4a2a2a;}
+  .btn-sm{padding:6px 10px;font-size:12px;}
+
+  .progress-wrap{margin-bottom:6px;}
+  .progress-bar{
+    height:8px;background:var(--card2);border-radius:99px;overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .progress-fill{height:100%;background:var(--green);transition:width .3s ease;}
+  .progress-label{
+    display:flex;justify-content:space-between;font-size:12px;color:var(--muted);
+    margin-top:6px;
+  }
+
+  .next-panel{
+    background:linear-gradient(135deg,#0f3d24,#0c2e1c);
+    border:1px solid var(--green-dark);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+    text-align:center;
+  }
+  .next-panel .contact-name{font-size:19px;font-weight:700;margin:2px 0;}
+  .next-panel .contact-phone{color:var(--muted);font-size:13px;margin-bottom:12px;}
+  .next-panel .msg-preview{
+    background:rgba(0,0,0,.25);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13px;
+    color:#d7e0e4;
+    text-align:left;
+    white-space:pre-wrap;
+    margin-bottom:14px;
+    max-height:110px;
+    overflow-y:auto;
+  }
+  .done-msg{color:var(--muted);font-size:14px;padding:10px 0;}
+
+  ul.contact-list{list-style:none;margin:0;padding:0;}
+  ul.contact-list li{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 4px;border-bottom:1px solid var(--border);
+    font-size:14px;
+  }
+  ul.contact-list li:last-child{border-bottom:none;}
+  .c-info{display:flex;flex-direction:column;overflow:hidden;}
+  .c-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;}
+  .c-phone{color:var(--muted);font-size:12px;}
+  .badge{
+    font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap;
+  }
+  .badge.pendente{background:rgba(226,185,59,.15);color:var(--pending);}
+  .badge.enviado{background:rgba(37,211,102,.15);color:var(--sent);}
+  .li-actions{display:flex;align-items:center;gap:8px;}
+  .icon-btn{
+    background:none;border:none;color:var(--muted);font-size:16px;padding:4px 6px;cursor:pointer;
+  }
+
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:20px 0;}
+  .toast{
+    position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+    background:#1f2c34;border:1px solid var(--border);color:var(--text);
+    padding:10px 16px;border-radius:10px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+    z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+  .footer-actions{display:flex;gap:8px;}
+  .footer-actions button{flex:1;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">📨</div>
+    <div>
+      <h1>Disparo Zap</h1>
+      <p>Clique a clique, sem automação — sem risco de ban</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>1. Mensagem</h2>
+    <textarea id="template" rows="3" placeholder="Ex: Oi {nome}! Tudo certo com seu acesso? Qualquer coisa me chama 🙂"></textarea>
+    <small class="hint">Use <strong>{nome}</strong> no texto — o app troca automaticamente pelo nome de cada contato.</small>
+  </div>
+
+  <div class="card">
+    <h2>2. Contatos</h2>
+    <textarea id="bulkAdd" rows="4" placeholder="Cole aqui, um por linha:&#10;João Silva, 31999998888&#10;Maria, 11988887777&#10;&#10;Também aceita texto colado direto do WhatsApp&#10;(nome e número juntos, sem formatar)"></textarea>
+    <div class="row">
+      <button class="btn-primary" id="btnImport" style="flex:1;">Adicionar lista</button>
+      <button class="btn-danger btn-sm" id="btnClear">Limpar tudo</button>
+    </div>
+    <small class="hint"><strong>Dica p/ extrair de grupo:</strong> abra o grupo → Dados do grupo → selecione e copie a lista de participantes → cole aqui direto. Funciona mesmo só com números soltos (sem nome) — cada número vira um contato "Contato XXXX" com os 4 últimos dígitos. O 55 do Brasil é adicionado automático se faltar.</small>
+  </div>
+
+  <div class="card">
+    <h2>Progresso</h2>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-label">
+        <span id="progressText">0 de 0 enviados</span>
+        <span id="progressPct">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="nextPanel"></div>
+
+  <div class="card">
+    <h2>Lista de contatos</h2>
+    <ul class="contact-list" id="contactList"></ul>
+    <div id="emptyState" class="empty" style="display:none;">Nenhum contato ainda. Adicione a lista acima ☝️</div>
+  </div>
+
+  <div class="footer-actions">
+    <button class="btn-secondary" id="btnResetStatus">Marcar todos como pendente</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'contacts';
+const TEMPLATE_KEY = 'template';
+let contacts = [];
+let template = '';
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function normalizePhone(raw){
+  let digits = raw.replace(/\D/g,'');
+  if(digits.length <= 11){ // sem DDI, assume Brasil
+    digits = '55' + digits;
+  }
+  return digits;
+}
+
+function makeContact(nameRaw, digitsRaw){
+  const phone = normalizePhone(digitsRaw);
+  const name = (nameRaw && nameRaw.trim()) ? nameRaw.trim() : 'Contato ' + phone.slice(-4);
+  return {
+    id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+    name, phone, status: 'pendente'
+  };
+}
+
+function parseBulk(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const parsed = [];
+  const phoneRegex = /(\+?\d[\d\s().-]{7,}\d)/g;
+
+  for(const line of lines){
+    // ignora linhas que são só marcadores de grupo (admin, você, etc.)
+    if(/^(admin|voc[eê]|criador\(a\) do grupo)$/i.test(line)) continue;
+
+    const matches = [...line.matchAll(phoneRegex)];
+
+    if(line.includes(',') && matches.length <= 1){
+      // formato explícito "nome, numero" (compatibilidade)
+      const parts = line.split(',');
+      const digits = parts.slice(1).join(',').replace(/\D/g,'');
+      if(digits.length >= 8){
+        parsed.push(makeContact(parts[0], digits));
+        continue;
+      }
+    }
+
+    if(matches.length === 0) continue;
+
+    if(matches.length === 1){
+      // um número na linha: o resto do texto (se tiver) vira o nome
+      const m = matches[0];
+      const digits = m[0].replace(/\D/g,'');
+      if(digits.length < 8) continue;
+      const name = (line.slice(0,m.index) + line.slice(m.index+m[0].length))
+        .replace(/[()•·|-]/g,' ').replace(/\s+/g,' ').trim();
+      parsed.push(makeContact(name, digits));
+    } else {
+      // vários números soltos na mesma linha (ex: colados separados por vírgula/espaço)
+      matches.forEach(m=>{
+        const digits = m[0].replace(/\D/g,'');
+        if(digits.length >= 8) parsed.push(makeContact('', digits));
+      });
+    }
+  }
+  return parsed;
+}
+
+async function loadData(){
+  try{
+    const c = await window.storage.get(STORAGE_KEY, false);
+    contacts = c ? JSON.parse(c.value) : [];
+  }catch(e){ contacts = []; }
+  try{
+    const t = await window.storage.get(TEMPLATE_KEY, false);
+    template = t ? t.value : '';
+  }catch(e){ template = ''; }
+  document.getElementById('template').value = template;
+  render();
+}
+
+async function saveContacts(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(contacts), false); }
+  catch(e){ console.error('Erro ao salvar contatos', e); }
+}
+
+async function saveTemplate(){
+  try{ await window.storage.set(TEMPLATE_KEY, template, false); }
+  catch(e){ console.error('Erro ao salvar template', e); }
+}
+
+function buildMessage(name){
+  const t = template || '';
+  return t.replace(/\{nome\}/gi, name);
+}
+
+function render(){
+  const total = contacts.length;
+  const sent = contacts.filter(c=>c.status==='enviado').length;
+  const pct = total ? Math.round((sent/total)*100) : 0;
+
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${sent} de ${total} enviados`;
+  document.getElementById('progressPct').textContent = pct + '%';
+
+  // next panel
+  const nextPanel = document.getElementById('nextPanel');
+  const next = contacts.find(c=>c.status==='pendente');
+  if(!next){
+    nextPanel.innerHTML = total
+      ? `<div class="card next-panel"><div class="done-msg">🎉 Todo mundo já recebeu a mensagem!</div></div>`
+      : '';
+  } else {
+    const msg = buildMessage(next.name);
+    nextPanel.innerHTML = `
+      <div class="next-panel">
+        <div style="font-size:12px;color:var(--muted);">Próximo contato</div>
+        <div class="contact-name">${escapeHtml(next.name)}</div>
+        <div class="contact-phone">${formatPhoneDisplay(next.phone)}</div>
+        <div class="msg-preview">${escapeHtml(msg)}</div>
+        <button class="btn-primary" id="btnSendNext">Abrir no WhatsApp ➜</button>
+      </div>
+    `;
+    document.getElementById('btnSendNext').onclick = () => openAndMark(next.id);
+  }
+
+  // list
+  const listEl = document.getElementById('contactList');
+  const emptyEl = document.getElementById('emptyState');
+  if(!contacts.length){
+    listEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+  } else {
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = contacts.map(c => `
+      <li>
+        <div class="c-info">
+          <span class="c-name">${escapeHtml(c.name)}</span>
+          <span class="c-phone">${formatPhoneDisplay(c.phone)}</span>
+        </div>
+        <div class="li-actions">
+          <span class="badge ${c.status}">${c.status}</span>
+          <button class="icon-btn" title="Reenviar / abrir de novo" onclick="openAndMark('${c.id}')">↻</button>
+          <button class="icon-btn" title="Remover" onclick="removeContact('${c.id}')">✕</button>
+        </div>
+      </li>
+    `).join('');
+  }
+}
+
+function formatPhoneDisplay(digits){
+  // 55 31 99999-8888
+  if(digits.length >= 12){
+    const ddi = digits.slice(0,2);
+    const ddd = digits.slice(2,4);
+    const rest = digits.slice(4);
+    const mid = rest.length > 4 ? rest.slice(0,-4) : rest;
+    const end = rest.length > 4 ? rest.slice(-4) : '';
+    return `+${ddi} ${ddd} ${mid}${end ? '-'+end : ''}`;
+  }
+  return digits;
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
+}
+
+window.openAndMark = function(id){
+  const c = contacts.find(x=>x.id===id);
+  if(!c) return;
+  const msg = encodeURIComponent(buildMessage(c.name));
+  const url = `https://wa.me/${c.phone}?text=${msg}`;
+  window.open(url, '_blank');
+  c.status = 'enviado';
+  saveContacts();
+  render();
+};
+
+window.removeContact = function(id){
+  contacts = contacts.filter(c=>c.id!==id);
+  saveContacts();
+  render();
+};
+
+document.getElementById('btnImport').onclick = async () => {
+  const raw = document.getElementById('bulkAdd').value;
+  const novos = parseBulk(raw);
+  if(!novos.length){
+    toast('Nenhum contato válido encontrado. Use: nome, número');
+    return;
+  }
+  // evita duplicar por telefone
+  const existentes = new Set(contacts.map(c=>c.phone));
+  const filtrados = novos.filter(n=>!existentes.has(n.phone));
+  contacts = contacts.concat(filtrados);
+  document.getElementById('bulkAdd').value = '';
+  await saveContacts();
+  render();
+  toast(`${filtrados.length} contato(s) adicionado(s)`);
+};
+
+document.getElementById('btnClear').onclick = async () => {
+  if(!confirm('Apagar todos os contatos da lista?')) return;
+  contacts = [];
+  await saveContacts();
+  render();
+  toast('Lista limpa');
+};
+
+document.getElementById('btnResetStatus').onclick = async () => {
+  contacts.forEach(c => c.status = 'pendente');
+  await saveContacts();
+  render();
+  toast('Todos marcados como pendente novamente');
+};
+
+document.getElementById('template').addEventListener('input', async (e) => {
+  template = e.target.value;
+  await saveTemplate();
+  render();
+});
+
+loadData();
+</script>
+</body>
+</html>
