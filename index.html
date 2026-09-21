@@ -170,6 +170,21 @@
   </div>
 
   <div class="card">
+    <h2>3. Imagem (opcional)</h2>
+    <input type="file" id="imageInput" accept="image/*">
+    <div id="imagePreviewWrap" style="display:none;margin-top:10px;">
+      <img id="imagePreview" style="max-width:100%;max-height:160px;border-radius:10px;display:block;margin-bottom:8px;">
+      <button class="btn-danger btn-sm" id="btnRemoveImage">Remover imagem</button>
+    </div>
+    <small class="hint">O WhatsApp <strong>não permite</strong> anexar imagem automaticamente via link — isso é uma trava do próprio WhatsApp, não tem jeito de contornar. A imagem fica salva aqui só como lembrete visual pra você.</small>
+
+    <div style="margin-top:14px;">
+      <input type="text" id="mediaLink" placeholder="Link público da imagem/vídeo (opcional) — ex: Drive, Imgur...">
+      <small class="hint">Se preencher, esse link entra sozinho no final de cada mensagem. O WhatsApp mostra um preview da imagem automaticamente pra quem recebe.</small>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Progresso</h2>
     <div class="progress-wrap">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
@@ -199,8 +214,12 @@
 <script>
 const STORAGE_KEY = 'contacts';
 const TEMPLATE_KEY = 'template';
+const IMAGE_KEY = 'image';
+const MEDIA_LINK_KEY = 'mediaLink';
 let contacts = [];
 let template = '';
+let savedImage = '';
+let mediaLink = '';
 
 function toast(msg){
   const t = document.getElementById('toast');
@@ -279,6 +298,16 @@ async function loadData(){
     template = t ? t.value : '';
   }catch(e){ template = ''; }
   document.getElementById('template').value = template;
+  try{
+    const img = await window.storage.get(IMAGE_KEY, false);
+    savedImage = img ? img.value : '';
+  }catch(e){ savedImage = ''; }
+  updateImagePreview();
+  try{
+    const link = await window.storage.get(MEDIA_LINK_KEY, false);
+    mediaLink = link ? link.value : '';
+  }catch(e){ mediaLink = ''; }
+  document.getElementById('mediaLink').value = mediaLink;
   render();
 }
 
@@ -294,7 +323,11 @@ async function saveTemplate(){
 
 function buildMessage(name){
   const t = template || '';
-  return t.replace(/\{nome\}/gi, name);
+  let msg = t.replace(/\{nome\}/gi, name);
+  if(mediaLink && mediaLink.trim()){
+    msg = msg + '\n\n' + mediaLink.trim();
+  }
+  return msg;
 }
 
 function render(){
@@ -315,11 +348,15 @@ function render(){
       : '';
   } else {
     const msg = buildMessage(next.name);
+    const imgHtml = savedImage
+      ? `<img src="${savedImage}" style="max-width:100%;max-height:130px;border-radius:10px;margin-bottom:10px;">`
+      : '';
     nextPanel.innerHTML = `
       <div class="next-panel">
         <div style="font-size:12px;color:var(--muted);">Próximo contato</div>
         <div class="contact-name">${escapeHtml(next.name)}</div>
         <div class="contact-phone">${formatPhoneDisplay(next.phone)}</div>
+        ${imgHtml}
         <div class="msg-preview">${escapeHtml(msg)}</div>
         <button class="btn-primary" id="btnSendNext">Abrir no WhatsApp ➜</button>
       </div>
@@ -422,6 +459,71 @@ document.getElementById('btnResetStatus').onclick = async () => {
 document.getElementById('template').addEventListener('input', async (e) => {
   template = e.target.value;
   await saveTemplate();
+  render();
+});
+
+function updateImagePreview(){
+  const wrap = document.getElementById('imagePreviewWrap');
+  const img = document.getElementById('imagePreview');
+  if(savedImage){
+    img.src = savedImage;
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+function compressImage(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const image = new Image();
+      image.onload = () => {
+        const maxW = 800;
+        const scale = Math.min(1, maxW / image.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width * scale;
+        canvas.height = image.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      image.onerror = reject;
+      image.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('imageInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    savedImage = await compressImage(file);
+    await window.storage.set(IMAGE_KEY, savedImage, false);
+    updateImagePreview();
+    render();
+    toast('Imagem salva');
+  }catch(err){
+    console.error(err);
+    toast('Não consegui carregar essa imagem');
+  }
+});
+
+document.getElementById('btnRemoveImage').onclick = async () => {
+  savedImage = '';
+  try{ await window.storage.delete(IMAGE_KEY, false); }catch(e){}
+  document.getElementById('imageInput').value = '';
+  updateImagePreview();
+  render();
+  toast('Imagem removida');
+};
+
+document.getElementById('mediaLink').addEventListener('input', async (e) => {
+  mediaLink = e.target.value;
+  try{ await window.storage.set(MEDIA_LINK_KEY, mediaLink, false); }
+  catch(err){ console.error('Erro ao salvar link de mídia', err); }
   render();
 });
 
