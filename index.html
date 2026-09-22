@@ -288,36 +288,33 @@ function parseBulk(text){
   return parsed;
 }
 
-async function loadData(){
+function loadData(){
   try{
-    const c = await window.storage.get(STORAGE_KEY, false);
-    contacts = c ? JSON.parse(c.value) : [];
+    const c = localStorage.getItem(STORAGE_KEY);
+    contacts = c ? JSON.parse(c) : [];
   }catch(e){ contacts = []; }
   try{
-    const t = await window.storage.get(TEMPLATE_KEY, false);
-    template = t ? t.value : '';
+    template = localStorage.getItem(TEMPLATE_KEY) || '';
   }catch(e){ template = ''; }
   document.getElementById('template').value = template;
   try{
-    const img = await window.storage.get(IMAGE_KEY, false);
-    savedImage = img ? img.value : '';
+    savedImage = localStorage.getItem(IMAGE_KEY) || '';
   }catch(e){ savedImage = ''; }
   updateImagePreview();
   try{
-    const link = await window.storage.get(MEDIA_LINK_KEY, false);
-    mediaLink = link ? link.value : '';
+    mediaLink = localStorage.getItem(MEDIA_LINK_KEY) || '';
   }catch(e){ mediaLink = ''; }
   document.getElementById('mediaLink').value = mediaLink;
   render();
 }
 
-async function saveContacts(){
-  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(contacts), false); }
-  catch(e){ console.error('Erro ao salvar contatos', e); }
+function saveContacts(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts)); }
+  catch(e){ console.error('Erro ao salvar contatos', e); toast('Não consegui salvar — memória do navegador cheia?'); }
 }
 
-async function saveTemplate(){
-  try{ await window.storage.set(TEMPLATE_KEY, template, false); }
+function saveTemplate(){
+  try{ localStorage.setItem(TEMPLATE_KEY, template); }
   catch(e){ console.error('Erro ao salvar template', e); }
 }
 
@@ -501,28 +498,28 @@ document.getElementById('imageInput').addEventListener('change', async (e) => {
   if(!file) return;
   try{
     savedImage = await compressImage(file);
-    await window.storage.set(IMAGE_KEY, savedImage, false);
+    localStorage.setItem(IMAGE_KEY, savedImage);
     updateImagePreview();
     render();
     toast('Imagem salva');
   }catch(err){
     console.error(err);
-    toast('Não consegui carregar essa imagem');
+    toast('Não consegui carregar essa imagem (talvez seja muito grande)');
   }
 });
 
-document.getElementById('btnRemoveImage').onclick = async () => {
+document.getElementById('btnRemoveImage').onclick = () => {
   savedImage = '';
-  try{ await window.storage.delete(IMAGE_KEY, false); }catch(e){}
+  try{ localStorage.removeItem(IMAGE_KEY); }catch(e){}
   document.getElementById('imageInput').value = '';
   updateImagePreview();
   render();
   toast('Imagem removida');
 };
 
-document.getElementById('mediaLink').addEventListener('input', async (e) => {
+document.getElementById('mediaLink').addEventListener('input', (e) => {
   mediaLink = e.target.value;
-  try{ await window.storage.set(MEDIA_LINK_KEY, mediaLink, false); }
+  try{ localStorage.setItem(MEDIA_LINK_KEY, mediaLink); }
   catch(err){ console.error('Erro ao salvar link de mídia', err); }
   render();
 });
