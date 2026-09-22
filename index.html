@@ -153,6 +153,8 @@
     </div>
   </header>
 
+  <div id="storageWarning" style="display:none;background:#3a1f1f;border:1px solid #7a3a3a;color:#ffb3b3;border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:14px;"></div>
+
   <div class="card">
     <h2>1. Mensagem</h2>
     <textarea id="template" rows="3" placeholder="Ex: Oi {nome}! Tudo certo com seu acesso? Qualquer coisa me chama 🙂"></textarea>
@@ -524,7 +526,21 @@ document.getElementById('mediaLink').addEventListener('input', (e) => {
   render();
 });
 
+function checkStorage(){
+  const warnEl = document.getElementById('storageWarning');
+  try{
+    const testKey = '__test_disparozap__';
+    localStorage.setItem(testKey, '1');
+    localStorage.removeItem(testKey);
+    warnEl.style.display = 'none';
+  }catch(e){
+    warnEl.style.display = 'block';
+    warnEl.textContent = '⚠️ Este navegador está bloqueando o salvamento de dados (' + e.name + '). Verifique se não está numa aba anônima/InPrivate, ou se a opção "limpar dados ao fechar" está ativada nas configurações do navegador.';
+  }
+}
+
 loadData();
+checkStorage();
 </script>
 </body>
 </html>
